@@ -111,6 +111,10 @@ function addRota() {
             </div>
             <div class="item-fields">
                 <div class="form-group">
+                    <label>Dia</label>
+                    <input type="date" class="rota-dia">
+                </div>
+                <div class="form-group">
                     <label>Horário</label>
                     <input type="time" class="rota-horario" placeholder="Ex: 07:00">
                 </div>
@@ -189,6 +193,10 @@ function addLocal() {
                     <input type="text" class="local-nome" placeholder="Ex: Centro Comunitário">
                 </div>
                 <div class="form-group">
+                    <label>Dia</label>
+                    <input type="date" class="local-dia">
+                </div>
+                <div class="form-group">
                     <label>Horário</label>
                     <input type="time" class="local-horario" placeholder="Ex: 12:00">
                 </div>
@@ -246,6 +254,10 @@ function generateId() {
     return 'PED-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 }
 
+function formatDescricao(descricao) {
+    return String(descricao || '').toLocaleUpperCase('pt-BR');
+}
+
 // =============================================================================
 // FUNÇÕES DE CADASTRO
 // =============================================================================
@@ -276,7 +288,7 @@ function salvarPedido() {
             alert('Por favor, preencha a descrição do pedido.');
             return;
         }
-        pedido.descricao = descricao;
+        pedido.descricao = formatDescricao(descricao);
 
         // Coleta as rotas
         const rotasContainer = document.getElementById('rotas-list');
@@ -287,13 +299,19 @@ function salvarPedido() {
             return;
         }
 
+        let rotaInvalida = false;
+
         // Processa cada rota
         rotasCards.forEach((rota, index) => {
+            if (rotaInvalida) return;
+
+            const dia = rota.querySelector('.rota-dia').value;
             const horario = rota.querySelector('.rota-horario').value;
             const destino = rota.querySelector('.rota-destino').value;
             
-            if (!horario || !destino) {
-                alert(`Por favor, preencha o horário e destino da Rota ${index + 1}.`);
+            if (!dia || !horario || !destino) {
+                alert(`Por favor, preencha o dia, horário e destino da Rota ${index + 1}.`);
+                rotaInvalida = true;
                 return;
             }
 
@@ -311,6 +329,7 @@ function salvarPedido() {
 
             if (escolas.length === 0) {
                 alert(`Por favor, adicione pelo menos uma escola na Rota ${index + 1}.`);
+                rotaInvalida = true;
                 return;
             }
 
@@ -318,11 +337,16 @@ function salvarPedido() {
             pedido.detalhes.push({
                 tipo: 'rota',
                 numero: index + 1,
+                dia,
                 horario,
                 destino,
                 escolas
             });
         });
+
+        if (rotaInvalida) {
+            return;
+        }
         
     } else {
         // ==========================================
@@ -335,7 +359,7 @@ function salvarPedido() {
             alert('Por favor, preencha a descrição do pedido.');
             return;
         }
-        pedido.descricao = descricao;
+        pedido.descricao = formatDescricao(descricao);
 
         // Coleta os locais
         const locaisContainer = document.getElementById('locais-list');
@@ -346,14 +370,20 @@ function salvarPedido() {
             return;
         }
 
+        let localInvalido = false;
+
         // Processa cada local
         locaisCards.forEach((local, index) => {
+            if (localInvalido) return;
+
             const nome = local.querySelector('.local-nome').value;
+            const dia = local.querySelector('.local-dia').value;
             const horario = local.querySelector('.local-horario').value;
             const quantidade = local.querySelector('.local-quantidade').value;
             
-            if (!nome || !horario || !quantidade) {
+            if (!nome || !dia || !horario || !quantidade) {
                 alert(`Por favor, preencha todos os campos do Local ${index + 1}.`);
+                localInvalido = true;
                 return;
             }
 
@@ -362,10 +392,15 @@ function salvarPedido() {
                 tipo: 'local',
                 numero: index + 1,
                 nome,
+                dia,
                 horario,
                 quantidade: parseInt(quantidade)
             });
         });
+
+        if (localInvalido) {
+            return;
+        }
     }
 
     // Salva o pedido no array e no LocalStorage
@@ -416,7 +451,6 @@ function renderPedidos() {
     // Gera o HTML de cada linha da tabela
     tbody.innerHTML = pedidos.map(pedido => {
         const tipoLabel = pedido.tipo === 'transporte' ? 'Transporte' : 'Alimentação';
-        const tipoIcon = pedido.tipo === 'transporte' ? '🚌' : '🍽️';
         const dataFormatada = new Date(pedido.data).toLocaleDateString('pt-BR');
         
         // Gera o resumo dos detalhes
@@ -431,9 +465,8 @@ function renderPedidos() {
         
         return `
             <tr>
-                <td>${pedido.id}</td>
-                <td>${tipoIcon} ${tipoLabel}</td>
-                <td>${pedido.descricao}</td>
+                <td>${tipoLabel}</td>
+                <td>${formatDescricao(pedido.descricao)}</td>
                 <td>${dataFormatada}</td>
                 <td>${detalhesResumo}</td>
                 <td class="no-print">
@@ -478,7 +511,8 @@ function viewDetails(pedidoId) {
         // Template para rotas
         detalhesHTML = pedido.detalhes.map(rota => `
             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-                <h4 style="color: #2c3e50; margin-bottom: 10px;">🚏 Rota ${rota.numero}</h4>
+                <h4 style="color: #2c3e50; margin-bottom: 10px;">Rota ${rota.numero}</h4>
+                <p><strong>Dia:</strong> ${rota.dia ? new Date(`${rota.dia}T00:00:00`).toLocaleDateString('pt-BR') : '-'}</p>
                 <p><strong>Horário:</strong> ${rota.horario}</p>
                 <p><strong>Destino:</strong> ${rota.destino}</p>
                 <p style="margin-top: 10px;"><strong>Escolas:</strong></p>
@@ -492,8 +526,9 @@ function viewDetails(pedidoId) {
         const totalGeral = pedido.detalhes.reduce((acc, local) => acc + local.quantidade, 0);
         detalhesHTML = pedido.detalhes.map(local => `
             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-                <h4 style="color: #2c3e50; margin-bottom: 10px;">📍 Local ${local.numero}</h4>
+                <h4 style="color: #2c3e50; margin-bottom: 10px;">Local ${local.numero}</h4>
                 <p><strong>Nome:</strong> ${local.nome}</p>
+                <p><strong>Dia:</strong> ${local.dia ? new Date(`${local.dia}T00:00:00`).toLocaleDateString('pt-BR') : '-'}</p>
                 <p><strong>Horário:</strong> ${local.horario}</p>
                 <p><strong>Quantidade:</strong> ${local.quantidade}</p>
             </div>
@@ -510,9 +545,8 @@ function viewDetails(pedidoId) {
     // Insere o conteúdo no modal
     modalBody.innerHTML = `
         <div style="margin-bottom: 15px;">
-            <p><strong>ID:</strong> ${pedido.id}</p>
             <p><strong>Tipo:</strong> ${tipoLabel}</p>
-            <p><strong>Descrição:</strong> ${pedido.descricao}</p>
+            <p><strong>Descrição:</strong> ${formatDescricao(pedido.descricao)}</p>
             <p><strong>Data:</strong> ${dataFormatada}</p>
         </div>
         <hr style="margin: 20px 0;">
@@ -555,102 +589,348 @@ function deletePedido(pedidoId) {
 // =============================================================================
 
 /**
- * Gera uma nova janela para impressão dos pedidos
- * Cria um relatório formatado para PDF
+ * Versao visual aprimorada do relatorio de impressao.
+ * Esta declaracao substitui a implementacao anterior mantendo o mesmo botao.
  */
 function imprimirPedidos() {
-    // Verifica se há pedidos para imprimir
     if (pedidos.length === 0) {
         alert('Nenhum pedido para imprimir.');
         return;
     }
 
-    // Abre uma nova janela para impressão
     const printWindow = window.open('', '_blank');
-    
-    // Template do relatório HTML
+    if (!printWindow) {
+        alert('Nao foi possivel abrir a janela de impressao. Verifique o bloqueador de pop-ups.');
+        return;
+    }
+
+    const escapeHTML = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    const formatDate = (date) => new Date(date).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    const formatRouteDate = (date) => {
+        if (!date) return '-';
+        return new Date(`${date}T00:00:00`).toLocaleDateString('pt-BR');
+    };
+
+    const dataGeracao = formatDate(new Date());
     let html = `
         <!DOCTYPE html>
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
-            <title>Relatório de Pedidos</title>
+            <title>Relatorio de Pedidos</title>
             <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                h1 { text-align: center; color: #333; margin-bottom: 30px; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-                th { background-color: #34495e; color: white; }
-                .pedido-section { margin-bottom: 30px; page-break-after: always; }
-                .pedido-header { background: #f8f9fa; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
-                .detalhe-card { background: #fff; border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; }
+                @page { size: A4; margin: 14mm; }
+                * { box-sizing: border-box; }
+                body {
+                    margin: 0;
+                    color: #1f2933;
+                    background: #fff;
+                    font-family: "Segoe UI", Arial, sans-serif;
+                    font-size: 12px;
+                    line-height: 1.45;
+                }
+                .report-shell { max-width: 190mm; margin: 0 auto; }
+                .report-header {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 24px;
+                    padding-bottom: 16px;
+                    margin-bottom: 18px;
+                    border-bottom: 3px solid #1f4e79;
+                }
+                .report-title {
+                    margin: 0 0 6px;
+                    color: #17324d;
+                    font-size: 25px;
+                    letter-spacing: 0;
+                }
+                .report-subtitle { margin: 0; color: #5d6b78; font-size: 12px; }
+                .group-band {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    margin: 18px 0 10px;
+                    padding: 9px 12px;
+                    color: #ffffff;
+                    background: #1f4e79;
+                    border-radius: 6px;
+                    font-size: 12px;
+                    font-weight: 700;
+                    letter-spacing: 0;
+                    text-transform: uppercase;
+                    break-after: avoid;
+                    page-break-after: avoid;
+                }
+                .group-count {
+                    font-size: 10px;
+                    font-weight: 600;
+                    opacity: 0.9;
+                }
+                .pedido-section {
+                    break-inside: avoid;
+                    page-break-inside: avoid;
+                    margin-bottom: 18px;
+                    border: 1px solid #d7dee8;
+                    border-radius: 8px;
+                    overflow: hidden;
+                }
+                .pedido-header {
+                    display: grid;
+                    grid-template-columns: 1fr auto;
+                    gap: 12px;
+                    padding: 14px 16px;
+                    background: #edf4fb;
+                    border-bottom: 1px solid #d7dee8;
+                }
+                .pedido-descricao {
+                    margin: 0;
+                    color: #25313d;
+                    font-size: 13px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                }
+                .pedido-meta {
+                    text-align: right;
+                    color: #5d6b78;
+                    font-size: 11px;
+                    white-space: nowrap;
+                }
+                .tipo-badge {
+                    display: inline-block;
+                    margin-bottom: 6px;
+                    padding: 4px 8px;
+                    border-radius: 999px;
+                    color: #17324d;
+                    background: #fff;
+                    border: 1px solid #c6d6e6;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    font-size: 10px;
+                }
+                .pedido-body { padding: 14px 16px 16px; }
+                .detalhe-card {
+                    break-inside: avoid;
+                    page-break-inside: avoid;
+                    margin-bottom: 12px;
+                    padding: 12px;
+                    border: 1px solid #dfe5ec;
+                    border-radius: 6px;
+                    background: #fff;
+                }
+                .detalhe-card:last-child { margin-bottom: 0; }
+                .detalhe-title {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 12px;
+                    margin-bottom: 8px;
+                    color: #17324d;
+                    font-size: 13px;
+                    font-weight: 700;
+                }
+                .detail-grid {
+                    display: grid;
+                    grid-template-columns: 120px 120px 1fr;
+                    gap: 8px 18px;
+                    margin-bottom: 8px;
+                }
+                .detail-item span,
+                .schools-label {
+                    display: block;
+                    color: #687888;
+                    font-size: 10px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                }
+                .detail-item strong { color: #25313d; font-size: 12px; }
+                .school-list {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 6px;
+                    margin: 6px 0 0;
+                    padding: 0;
+                    list-style: none;
+                }
+                .school-list li {
+                    padding: 6px 8px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 4px;
+                    background: #f8fafc;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 2px;
+                }
+                th, td {
+                    padding: 8px 9px;
+                    border: 1px solid #dfe5ec;
+                    text-align: left;
+                    vertical-align: top;
+                }
+                th {
+                    color: #17324d;
+                    background: #edf4fb;
+                    font-size: 10px;
+                    text-transform: uppercase;
+                }
+                .number-cell, .total-number { text-align: right; }
+                .total-row td {
+                    background: #f1f7ef;
+                    color: #1f5132;
+                    font-weight: 700;
+                }
+                .report-footer {
+                    margin-top: 18px;
+                    padding-top: 10px;
+                    border-top: 1px solid #d7dee8;
+                    color: #748291;
+                    font-size: 10px;
+                    text-align: center;
+                }
             </style>
         </head>
         <body>
-            <h1>Relatório de Pedidos</h1>
-            <p><strong>Data de geração:</strong> ${new Date().toLocaleDateString('pt-BR')}</p>
-            <p><strong>Total de pedidos:</strong> ${pedidos.length}</p>
-            <hr>
+            <main class="report-shell">
+                <header class="report-header">
+                    <div>
+                        <h1 class="report-title">Relatorio de Pedidos</h1>
+                        <p class="report-subtitle">Gerado em ${dataGeracao}</p>
+                    </div>
+                </header>
     `;
 
-    // Gera o HTML de cada pedido
-    pedidos.forEach(pedido => {
-        const tipoLabel = pedido.tipo === 'transporte' ? 'Transporte' : 'Alimentação';
-        const dataFormatada = new Date(pedido.data).toLocaleDateString('pt-BR');
+    const grupos = [
+        { tipo: 'transporte', titulo: 'Transporte' },
+        { tipo: 'alimentacao', titulo: 'Alimentacao' }
+    ];
+
+    grupos.forEach(grupo => {
+        const pedidosDoGrupo = pedidos.filter(pedido => pedido.tipo === grupo.tipo);
+        if (pedidosDoGrupo.length === 0) return;
 
         html += `
-            <div class="pedido-section">
-                <div class="pedido-header">
-                    <h2>${pedido.id}</h2>
-                    <p><strong>Tipo:</strong> ${tipoLabel}</p>
-                    <p><strong>Descrição:</strong> ${pedido.descricao}</p>
-                    <p><strong>Data:</strong> ${dataFormatada}</p>
-                </div>
+            <div class="group-band">
+                <span>${grupo.titulo}</span>
+                <span class="group-count">${pedidosDoGrupo.length} pedido(s)</span>
+            </div>
         `;
 
-        if (pedido.tipo === 'transporte') {
-            // Template para transporte
-            pedido.detalhes.forEach(rota => {
-                html += `
-                    <div class="detalhe-card">
-                        <h3>Rota ${rota.numero}</h3>
-                        <p><strong>Horário:</strong> ${rota.horario}</p>
-                        <p><strong>Destino:</strong> ${rota.destino}</p>
-                        <p><strong>Escolas:</strong></p>
-                        <ul>
-                            ${rota.escolas.map(e => `<li>${e.nome}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            });
-        } else {
-            // Template para alimentação
-            let total = 0;
-            pedido.detalhes.forEach(local => {
-                total += local.quantidade;
-                html += `
-                    <div class="detalhe-card">
-                        <h3>Local ${local.numero}</h3>
-                        <p><strong>Nome:</strong> ${local.nome}</p>
-                        <p><strong>Horário:</strong> ${local.horario}</p>
-                        <p><strong>Quantidade:</strong> ${local.quantidade}</p>
-                    </div>
-                `;
-            });
-            html += `<p><strong>Total Geral:</strong> ${total}</p>`;
-        }
+        pedidosDoGrupo.forEach(pedido => {
+            const tipoLabel = pedido.tipo === 'transporte' ? 'Transporte' : 'Alimentacao';
 
-        html += `</div>`;
+            html += `
+                <section class="pedido-section">
+                    <div class="pedido-header">
+                        <div>
+                            <h2 class="pedido-descricao">${escapeHTML(formatDescricao(pedido.descricao))}</h2>
+                        </div>
+                        <div class="pedido-meta">
+                            <span class="tipo-badge">${tipoLabel}</span><br>
+                            ${formatDate(pedido.data)}
+                        </div>
+                    </div>
+                    <div class="pedido-body">
+            `;
+
+            if (pedido.tipo === 'transporte') {
+                pedido.detalhes.forEach(rota => {
+                    html += `
+                        <div class="detalhe-card">
+                            <div class="detalhe-title">
+                                <span>Rota ${rota.numero}</span>
+                                <span>${rota.escolas.length} escola(s)</span>
+                            </div>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <span>Dia</span>
+                                    <strong>${formatRouteDate(rota.dia)}</strong>
+                                </div>
+                                <div class="detail-item">
+                                    <span>Horario</span>
+                                    <strong>${escapeHTML(rota.horario)}</strong>
+                                </div>
+                                <div class="detail-item">
+                                    <span>Destino</span>
+                                    <strong>${escapeHTML(rota.destino)}</strong>
+                                </div>
+                            </div>
+                            <span class="schools-label">Escolas</span>
+                            <ul class="school-list">
+                                ${rota.escolas.map(e => `<li>${escapeHTML(e.nome)}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                });
+            } else {
+                let total = 0;
+                html += `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Local</th>
+                                <th>Dia</th>
+                                <th>Horario</th>
+                                <th class="number-cell">Quantidade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                pedido.detalhes.forEach(local => {
+                    total += local.quantidade;
+                    html += `
+                        <tr>
+                            <td>${escapeHTML(local.nome)}</td>
+                            <td>${formatRouteDate(local.dia)}</td>
+                            <td>${escapeHTML(local.horario)}</td>
+                            <td class="number-cell">${local.quantidade}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            <tr class="total-row">
+                                <td colspan="3">TOTAL GERAL</td>
+                                <td class="total-number">${total}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            html += `
+                    </div>
+                </section>
+            `;
+        });
     });
 
     html += `
+                <footer class="report-footer">
+                    Sistema de Gerenciamento de Pedidos
+                </footer>
+            </main>
         </body>
         </html>
     `;
 
-    // Escreve o HTML na nova janela e dispara a impressão
     printWindow.document.write(html);
     printWindow.document.close();
+    printWindow.focus();
     printWindow.print();
 }
 

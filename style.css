@@ -378,8 +378,21 @@ tr:hover {
 
 /* Ocultar elementos durante impressão */
 @media print {
+    @page {
+        size: A4;
+        margin: 14mm;
+    }
+
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
     body {
         background: white;
+        padding: 0;
+        color: #1f2933;
+        font-size: 12px;
     }
     
     .no-print {
@@ -389,18 +402,83 @@ tr:hover {
     .print-only {
         display: block !important;
     }
+
+    .container {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+    }
+
+    h1 {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 3px solid #1f4e79;
+        color: #17324d;
+        font-size: 22px;
+        text-align: left;
+    }
+
+    h2 {
+        margin-bottom: 12px;
+        color: #17324d;
+        font-size: 16px;
+    }
     
     .card {
         box-shadow: none;
-        border: 1px solid #ddd;
+        border: 1px solid #d7dee8;
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 16px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .table-container {
+        overflow: visible;
     }
     
     table {
+        width: 100%;
         font-size: 12px;
+        page-break-inside: auto;
     }
     
     th, td {
-        padding: 8px;
-        border: 1px solid #ddd;
+        padding: 7px 8px;
+        border: 1px solid #dfe5ec;
+        vertical-align: top;
+    }
+
+    th {
+        background: #edf4fb !important;
+        color: #17324d !important;
+        font-size: 10px;
+        text-transform: uppercase;
+    }
+
+    tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    tr:hover {
+        background: transparent;
+    }
+
+    .status-badge {
+        border: 1px solid currentColor;
+        background: transparent !important;
+    }
+
+    .empty-state {
+        padding: 20px;
+        color: #5d6b78;
+        border: 1px solid #d7dee8;
+        border-radius: 6px;
+    }
+
+    .modal {
+        display: none !important;
     }
 }

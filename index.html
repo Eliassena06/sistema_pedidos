@@ -55,7 +55,7 @@
             data-type="transporte"
             onclick="selectType('transporte')"
           >
-            <h3>🚌 Transporte</h3>
+            <h3>Transporte</h3>
             <p>Rotas com escolas e horários</p>
           </div>
           <div
@@ -63,7 +63,7 @@
             data-type="alimentacao"
             onclick="selectType('alimentacao')"
           >
-            <h3>🍽️ Alimentação</h3>
+            <h3>Alimentação</h3>
             <p>Locais com quantidade</p>
           </div>
         </div>
@@ -80,7 +80,7 @@
             <input
               type="text"
               id="transporte-descricao"
-              placeholder="Ex: Transporte escolar mês de maio"
+              placeholder="Ex: Transporte JECS"
             />
           </div>
 
@@ -107,7 +107,7 @@
             <input
               type="text"
               id="alimentacao-descricao"
-              placeholder="Ex: Alimentação evento dia dos pais"
+              placeholder="Ex: Alimentação JECS"
             />
           </div>
 
@@ -125,7 +125,7 @@
         <!-- Botão para salvar o pedido -->
         <div style="margin-top: 20px">
           <button class="btn btn-success" onclick="salvarPedido()">
-            💾 Salvar Pedido
+            Salvar Pedido
           </button>
         </div>
       </div>
@@ -147,7 +147,7 @@
         >
           <h2>Pedidos Cadastrados</h2>
           <button class="btn btn-warning no-print" onclick="imprimirPedidos()">
-            🖨️ Imprimir
+            Imprimir
           </button>
         </div>
 
@@ -156,7 +156,6 @@
           <table id="pedidos-table">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Tipo</th>
                 <th>Descrição</th>
                 <th>Data</th>
