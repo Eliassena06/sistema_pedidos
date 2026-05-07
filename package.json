@@ -1,0 +1,43 @@
+{
+  "name": "sistema-pedidos-app",
+  "version": "1.0.0",
+  "description": "Sistema de gerenciamento de pedidos com banco SQLite",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "node --no-warnings server.js",
+    "dev": "node --no-warnings server.js",
+    "app": "electron .",
+    "build:exe": "electron-builder --win --x64",
+    "check": "node --check server.js && node --check script.js && node --check electron-main.js && node --check service-worker.js"
+  },
+  "private": true,
+  "build": {
+    "appId": "br.local.sistema-pedidos",
+    "productName": "Sistema de Pedidos",
+    "asar": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron-main.js",
+      "server.js",
+      "index.html",
+      "style.css",
+      "script.js",
+      "service-worker.js",
+      "manifest.json",
+      "logoJECS.png",
+      "data/**",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "logoJECS.png",
+      "signAndEditExecutable": false
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "electron-builder": "^26.8.1"
+  }
+}

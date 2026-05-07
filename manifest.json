@@ -1,0 +1,25 @@
+{
+  "name": "Sistema de Gerenciamento de Pedidos",
+  "short_name": "Pedidos",
+  "description": "Sistema para organizar pedidos, rotas, entregas e abastecimento.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f8ff",
+  "theme_color": "#1f4e79",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "logoJECS.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logoJECS.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

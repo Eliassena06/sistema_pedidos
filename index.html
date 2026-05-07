@@ -19,9 +19,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1f4e79" />
+    <meta name="application-name" content="Sistema de Pedidos" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Sistema de Pedidos" />
     <title>Sistema de Gerenciamento de Pedidos</title>
+    <script>
+      (() => {
+        const portaCorreta = "3000";
+        const hostCorreto = "127.0.0.1";
+        const abertoComoArquivo = window.location.protocol === "file:";
+        const portaErrada =
+          ["localhost", "127.0.0.1"].includes(window.location.hostname) &&
+          window.location.port !== portaCorreta;
+
+        if (abertoComoArquivo || portaErrada) {
+          window.location.replace(`http://${hostCorreto}:${portaCorreta}/`);
+        }
+      })();
+    </script>
 
     <!-- Arquivo de estilos externos -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" href="logoJECS.png" />
+    <link rel="apple-touch-icon" href="logoJECS.png" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -32,7 +53,60 @@
         =====================================================
     -->
     <div class="container">
-      <h1>Sistema de Gerenciamento de Pedidos</h1>
+      <header class="page-header">
+        <img src="logoJECS.png" alt="Logo JECS" class="logo print-only" />
+        <div class="page-title">
+          <h1>Sistema de Gerenciamento de Pedidos</h1>
+          <p>Organize rotas, entregas e abastecimento com simplicidade.</p>
+        </div>
+      </header>
+
+      <div
+        id="notification-bar"
+        class="notification-bar"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <div class="card no-print">
+        <h2>Configurações</h2>
+        <div class="config-summary">
+          <p>
+            Defina os valores de água usados no sistema quando precisar ajustar
+            o abastecimento.
+          </p>
+          <button class="btn btn-outline" onclick="toggleWaterSettings()">
+            Ajustar água
+          </button>
+        </div>
+        <div id="water-settings" class="config-body">
+          <div class="settings-grid">
+            <div class="form-group">
+              <label>Água total (L)</label>
+              <input
+                type="number"
+                id="agua-total-comprada"
+                placeholder="Ex: 1000"
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div class="form-group">
+              <label>Valor da água</label>
+              <input
+                type="number"
+                id="agua-valor-comprado"
+                placeholder="Ex: 750,00"
+                min="0"
+                step="0.01"
+              />
+            </div>
+          </div>
+          <button class="btn btn-success" onclick="salvarConfiguracoes()">
+            Salvar Configurações
+          </button>
+        </div>
+      </div>
 
       <!--
             =====================================================
@@ -66,6 +140,11 @@
             <h3>Alimentação</h3>
             <p>Locais com quantidade</p>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label>Responsável do Pedido</label>
+          <input type="text" id="responsavel-pedido" placeholder="Ex: Ana" />
         </div>
 
         <!--
@@ -127,6 +206,14 @@
           <button class="btn btn-success" onclick="salvarPedido()">
             Salvar Pedido
           </button>
+          <button
+            class="btn btn-warning"
+            id="cancelar-edicao"
+            style="display: none"
+            onclick="cancelarEdicao()"
+          >
+            Cancelar Edição
+          </button>
         </div>
       </div>
 
@@ -159,6 +246,8 @@
                 <th>Tipo</th>
                 <th>Descrição</th>
                 <th>Data</th>
+                <th>Responsável</th>
+                <th>Status</th>
                 <th>Detalhes</th>
                 <th class="no-print">Ações</th>
               </tr>
@@ -172,6 +261,66 @@
         <!-- Mensagem exibida quando não há pedidos -->
         <div id="empty-state" class="empty-state">
           <p>Nenhum pedido cadastrado ainda.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="report-header-row">
+          <h2>Relatório de Entregas</h2>
+          <input
+            type="search"
+            id="relatorio-pesquisa"
+            class="report-search no-print"
+            placeholder="Pesquisar por pedido, local, escola ou responsável"
+            oninput="renderRelatorio()"
+          />
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-card">
+            <span>Hoje</span>
+            <strong id="entregas-hoje">0</strong>
+          </div>
+          <div class="summary-card">
+            <span>Semana</span>
+            <strong id="entregas-semana">0</strong>
+          </div>
+          <div class="summary-card">
+            <span>Total</span>
+            <strong id="entregas-total">0</strong>
+          </div>
+          <div class="summary-card">
+            <span>Água usada</span>
+            <strong id="agua-usada">0 L</strong>
+          </div>
+          <div class="summary-card">
+            <span>Água disponível</span>
+            <strong id="agua-disponivel">0 L</strong>
+          </div>
+          <div class="summary-card">
+            <span>Valor da água</span>
+            <strong id="agua-valor">R$ 0,00</strong>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Pedido</th>
+                <th>Tipo</th>
+                <th>Responsável</th>
+                <th>Entrega</th>
+                <th>Resumo</th>
+              </tr>
+            </thead>
+            <tbody id="relatorio-tbody">
+              <!-- Relatório inserido via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+        <div id="relatorio-empty" class="empty-state">
+          <p>Nenhuma entrega encontrada.</p>
         </div>
       </div>
     </div>
@@ -195,5 +344,12 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("service-worker.js").catch(console.error);
+        });
+      }
+    </script>
   </body>
 </html>
