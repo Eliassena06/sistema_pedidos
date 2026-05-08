@@ -1,6 +1,5 @@
 const path = require('node:path');
 const fs = require('node:fs');
-const { pathToFileURL } = require('node:url');
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 
 const HOST = '127.0.0.1';
@@ -52,6 +51,9 @@ function createWindow() {
 }
 
 async function openPrintPreview(html) {
+  const previewDir = path.join(process.env.APP_DATA_DIR, 'print-preview');
+  const previewId = `relatorio-pedidos-${Date.now()}`;
+  const filePath = path.join(previewDir, `${previewId}.html`);
   const printScript = `
     <script>
       window.addEventListener('load', () => {
@@ -62,11 +64,11 @@ async function openPrintPreview(html) {
   const printableHtml = html.includes('</body>')
     ? html.replace('</body>', `${printScript}</body>`)
     : `${html}${printScript}`;
-  const filePath = path.join(app.getPath('temp'), `relatorio-pedidos-${Date.now()}.html`);
 
+  fs.mkdirSync(previewDir, { recursive: true });
   fs.writeFileSync(filePath, printableHtml, 'utf8');
 
-  const openError = await shell.openExternal(pathToFileURL(filePath).toString());
+  const openError = await shell.openExternal(`${APP_URL}/print-preview/${previewId}`);
   if (openError) {
     throw new Error(openError);
   }

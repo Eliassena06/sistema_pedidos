@@ -8,8 +8,10 @@ const HOST = process.env.HOST || '127.0.0.1';
 const ROOT = __dirname;
 const DATA_DIR = process.env.APP_DATA_DIR || path.join(ROOT, 'data');
 const DB_PATH = path.join(DATA_DIR, 'sistema_pedidos.sqlite');
+const PRINT_PREVIEW_DIR = path.join(DATA_DIR, 'print-preview');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
+fs.mkdirSync(PRINT_PREVIEW_DIR, { recursive: true });
 
 const db = new DatabaseSync(DB_PATH);
 db.exec(`
@@ -224,10 +226,42 @@ function serveStatic(req, res) {
   });
 }
 
+function servePrintPreview(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const id = decodeURIComponent(url.pathname.replace('/print-preview/', ''));
+
+  if (!/^[a-z0-9-]+$/i.test(id)) {
+    res.writeHead(400);
+    res.end('Relatorio invalido.');
+    return;
+  }
+
+  const filePath = path.join(PRINT_PREVIEW_DIR, `${id}.html`);
+
+  fs.readFile(filePath, (error, content) => {
+    if (error) {
+      res.writeHead(404);
+      res.end('Relatorio nao encontrado.');
+      return;
+    }
+
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store'
+    });
+    res.end(content);
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     if (req.url.startsWith('/api/')) {
       await handleApi(req, res);
+      return;
+    }
+
+    if (req.url.startsWith('/print-preview/')) {
+      servePrintPreview(req, res);
       return;
     }
 
