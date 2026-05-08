@@ -1226,7 +1226,7 @@ function imprimirPedidos() {
     if (window.electronAPI?.printReport) {
         window.electronAPI.printReport(html).catch((error) => {
             console.error(error);
-            showNotification('error', 'Nao foi possivel abrir a janela classica de impressao.');
+            showNotification('error', 'Nao foi possivel abrir a visualizacao de impressao.');
         });
         return;
     }

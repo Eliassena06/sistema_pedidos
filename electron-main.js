@@ -50,7 +50,7 @@ function createWindow() {
   });
 }
 
-function printHtml(html) {
+function openPrintPreview(html) {
   return new Promise((resolve, reject) => {
     const printWindow = new BrowserWindow({
       width: 900,
@@ -82,23 +82,33 @@ function printHtml(html) {
     };
 
     printWindow.webContents.once('did-finish-load', () => {
-      setTimeout(() => {
+      setTimeout(async () => {
         if (printWindow.isDestroyed()) {
-          finish(new Error('Janela de impressao fechada antes de imprimir.'));
+          finish(new Error('Janela de visualizacao fechada antes de gerar o PDF.'));
           return;
         }
 
-        printWindow.webContents.print({
-          silent: false,
-          printBackground: true
-        }, (success, failureReason) => {
-          if (!success && failureReason) {
-            finish(new Error(failureReason));
+        try {
+          const pdf = await printWindow.webContents.printToPDF({
+            printBackground: true,
+            pageSize: 'A4',
+            margins: {
+              marginType: 'default'
+            }
+          });
+          const filePath = path.join(app.getPath('temp'), `relatorio-pedidos-${Date.now()}.pdf`);
+          fs.writeFileSync(filePath, pdf);
+
+          const openError = await shell.openPath(filePath);
+          if (openError) {
+            finish(new Error(openError));
             return;
           }
 
           finish();
-        });
+        } catch (error) {
+          finish(error);
+        }
       }, 350);
     });
 
@@ -115,7 +125,7 @@ ipcMain.handle('print-report', (_event, html) => {
     throw new Error('Relatorio vazio.');
   }
 
-  return printHtml(html);
+  return openPrintPreview(html);
 });
 
 const gotLock = app.requestSingleInstanceLock();
