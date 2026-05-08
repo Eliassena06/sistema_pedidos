@@ -40,7 +40,7 @@ function createWindow() {
   mainWindow.loadURL(APP_URL);
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith(APP_URL)) {
+    if (url.startsWith(APP_URL) || url === 'about:blank') {
       return { action: 'allow' };
     }
 
