@@ -1,5 +1,6 @@
 data/
-dist/
+dist/*
+!dist/app.exe
 dist.zip
 node_modules/
 *.log
