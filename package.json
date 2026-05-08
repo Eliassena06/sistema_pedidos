@@ -9,7 +9,7 @@
     "app": "electron .",
     "build:exe": "electron-builder --win --x64",
     "build:zip": "electron-builder --win --x64 --config.win.target=zip",
-    "check": "node --check server.js && node --check script.js && node --check electron-main.js && node --check service-worker.js"
+    "check": "node --check server.js && node --check script.js && node --check electron-main.js && node --check preload.js && node --check service-worker.js"
   },
   "private": true,
   "build": {
@@ -23,6 +23,7 @@
     "artifactName": "app.${ext}",
     "files": [
       "electron-main.js",
+      "preload.js",
       "server.js",
       "index.html",
       "style.css",

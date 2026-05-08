@@ -1,6 +1,6 @@
 const path = require('node:path');
 const fs = require('node:fs');
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 
 const HOST = '127.0.0.1';
 const PORT = '3000';
@@ -32,6 +32,7 @@ function createWindow() {
     icon: path.join(__dirname, 'logoJECS.png'),
     autoHideMenuBar: true,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -48,6 +49,74 @@ function createWindow() {
     return { action: 'deny' };
   });
 }
+
+function printHtml(html) {
+  return new Promise((resolve, reject) => {
+    const printWindow = new BrowserWindow({
+      width: 900,
+      height: 700,
+      show: false,
+      title: 'Relatorio de Pedidos',
+      autoHideMenuBar: true,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    });
+
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+
+      if (!printWindow.isDestroyed()) {
+        printWindow.close();
+      }
+
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve({ ok: true });
+    };
+
+    printWindow.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
+        if (printWindow.isDestroyed()) {
+          finish(new Error('Janela de impressao fechada antes de imprimir.'));
+          return;
+        }
+
+        printWindow.webContents.print({
+          silent: false,
+          printBackground: true
+        }, (success, failureReason) => {
+          if (!success && failureReason) {
+            finish(new Error(failureReason));
+            return;
+          }
+
+          finish();
+        });
+      }, 350);
+    });
+
+    printWindow.webContents.once('did-fail-load', (_event, _code, description) => {
+      finish(new Error(description || 'Nao foi possivel carregar o relatorio.'));
+    });
+
+    printWindow.loadURL(`data:text/html;charset=UTF-8,${encodeURIComponent(html)}`);
+  });
+}
+
+ipcMain.handle('print-report', (_event, html) => {
+  if (typeof html !== 'string' || !html.trim()) {
+    throw new Error('Relatorio vazio.');
+  }
+
+  return printHtml(html);
+});
 
 const gotLock = app.requestSingleInstanceLock();
 

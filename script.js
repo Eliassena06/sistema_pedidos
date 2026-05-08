@@ -824,7 +824,9 @@ function imprimirPedidos() {
         return;
     }
 
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.electronAPI?.printReport
+        ? { document: { write() {}, close() {} }, focus() {}, print() {}, close() {}, closed: true }
+        : window.open('', '_blank');
     if (!printWindow) {
         showNotification('error', 'Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.');
         return;
@@ -1220,6 +1222,14 @@ function imprimirPedidos() {
         </body>
         </html>
     `;
+
+    if (window.electronAPI?.printReport) {
+        window.electronAPI.printReport(html).catch((error) => {
+            console.error(error);
+            showNotification('error', 'Nao foi possivel abrir a janela classica de impressao.');
+        });
+        return;
+    }
 
     printWindow.document.write(html);
     printWindow.document.close();
