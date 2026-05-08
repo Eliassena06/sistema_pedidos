@@ -1,5 +1,6 @@
 const path = require('node:path');
 const fs = require('node:fs');
+const { pathToFileURL } = require('node:url');
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 
 const HOST = '127.0.0.1';
@@ -50,74 +51,27 @@ function createWindow() {
   });
 }
 
-function openPrintPreview(html) {
-  return new Promise((resolve, reject) => {
-    const printWindow = new BrowserWindow({
-      width: 900,
-      height: 700,
-      show: false,
-      title: 'Relatorio de Pedidos',
-      autoHideMenuBar: true,
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false
-      }
-    });
+async function openPrintPreview(html) {
+  const printScript = `
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => window.print(), 500);
+      });
+    </script>
+  `;
+  const printableHtml = html.includes('</body>')
+    ? html.replace('</body>', `${printScript}</body>`)
+    : `${html}${printScript}`;
+  const filePath = path.join(app.getPath('temp'), `relatorio-pedidos-${Date.now()}.html`);
 
-    let settled = false;
-    const finish = (error) => {
-      if (settled) return;
-      settled = true;
+  fs.writeFileSync(filePath, printableHtml, 'utf8');
 
-      if (!printWindow.isDestroyed()) {
-        printWindow.close();
-      }
+  const openError = await shell.openExternal(pathToFileURL(filePath).toString());
+  if (openError) {
+    throw new Error(openError);
+  }
 
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve({ ok: true });
-    };
-
-    printWindow.webContents.once('did-finish-load', () => {
-      setTimeout(async () => {
-        if (printWindow.isDestroyed()) {
-          finish(new Error('Janela de visualizacao fechada antes de gerar o PDF.'));
-          return;
-        }
-
-        try {
-          const pdf = await printWindow.webContents.printToPDF({
-            printBackground: true,
-            pageSize: 'A4',
-            margins: {
-              marginType: 'default'
-            }
-          });
-          const filePath = path.join(app.getPath('temp'), `relatorio-pedidos-${Date.now()}.pdf`);
-          fs.writeFileSync(filePath, pdf);
-
-          const openError = await shell.openPath(filePath);
-          if (openError) {
-            finish(new Error(openError));
-            return;
-          }
-
-          finish();
-        } catch (error) {
-          finish(error);
-        }
-      }, 350);
-    });
-
-    printWindow.webContents.once('did-fail-load', (_event, _code, description) => {
-      finish(new Error(description || 'Nao foi possivel carregar o relatorio.'));
-    });
-
-    printWindow.loadURL(`data:text/html;charset=UTF-8,${encodeURIComponent(html)}`);
-  });
+  return { ok: true };
 }
 
 ipcMain.handle('print-report', (_event, html) => {
